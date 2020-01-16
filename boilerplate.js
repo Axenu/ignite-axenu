@@ -148,6 +148,7 @@ async function install(context) {
 		{ template: "ignite.json.ejs", target: "ignite/ignite.json" },
 		{ template: ".editorconfig", target: ".editorconfig" },
 		{ template: ".eslintrc.js", target: ".eslintrc.js" },
+		{ template: "babel.config.js", target: "babel.config.js" },
 		{ template: "fastlane/Fastfile", target: "fastlane/Fastfile" },
 		{ template: "fastlane/Appfile", target: "fastlane/Appfile" },
 		{ template: "fastlane/Matchfile", target: "fastlane/Matchfile" },
