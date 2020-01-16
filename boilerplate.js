@@ -42,19 +42,26 @@ async function install(context) {
 		answers = options.answers.min;
 	} else {
 		answers = await prompt.ask([
+			// ask about other libraries that might be usefull
+			// {
+			// 	name: 'fast-image',
+			// 	message: 'Do you want to include fast-image?',
+			// 	type: 'confirm',
+			// },
 			{
-				name: 'fast-image',
-				message: 'Do you want to include fast-image?',
-				type: 'confirm',
+				name: 'packages',
+				message: 'What libraries do you want to add?',
+				type: 'multiselect',
+				choices: ['firebase', 'fast-image', 'async-storage', 'vector-icons']
 			},
-			{
-				name: 'includeFirebase',
-				message: 'Do you want to include firebase?',
-				type: 'confirm',
-			}
+			// {
+			// 	name: 'includeFirebase',
+			// 	message: 'Do you want to include firebase?',
+			// 	type: 'confirm',
+			// }
 		]);
 
-		if (answers['includeFirebase']) {
+		if (answers['packages'].includes('firebase') ) {
 			// await prompt.ask([
 			// 	{
 			// 		type: 'input',
@@ -68,6 +75,40 @@ async function install(context) {
 				choices: ['database', 'functions', 'analytics', 'firestore', 'storage', 'auth']
 			},])
 		}
+
+		// ask fastlane info, such as bundle id, itunes_connect_team_id and team_id, and email. 
+		await prompt.ask([
+			{
+				type: 'input',
+				name: 'app_id',
+				message: 'What application Id should be used? (com.org.app)',
+			},
+			{
+				type: 'input',
+				name: 'team_id',
+				message: 'What team_id should be used for fastlane? (BGAEM7HDDD)',
+			},
+			{
+				type: 'input',
+				name: 'itc_team_id',
+				message: 'What itc_team_id should be used for fastlane? (1092846)',
+			},
+			{
+				type: 'input',
+				name: 'email',
+				message: 'What is the developer email for appstoreconnect?',
+			},
+			{
+				type: 'input',
+				name: 'json_key',
+				message: 'What is the location of the json_key file for uploading the app to google play console?',
+			},
+			{
+				type: 'input',
+				name: 'git_secrets',
+				message: 'What is the url to the github repo containg?',
+			},
+		])
 	}
 
 
@@ -75,6 +116,7 @@ async function install(context) {
 	const rnInstall = await reactNative.install({
 		name,
 		version: REACT_NATIVE_VERSION,
+		package: answers['bundle-id']
 	});
 	if (rnInstall.exitCode > 0) process.exit(rnInstall.exitCode);
 
@@ -82,6 +124,14 @@ async function install(context) {
 	spinner.text = "▸ copying files";
 	spinner.start();
 	filesystem.copy(`${__dirname}/boilerplate/src`, `${process.cwd()}/src`, {
+		overwrite: true,
+		matching: "!*.ejs",
+	});
+	filesystem.copy(`${__dirname}/boilerplate/__mocks__`, `${process.cwd()}/__mocks__`, {
+		overwrite: true,
+		matching: "!*.ejs",
+	});
+	filesystem.copy(`${__dirname}/boilerplate/__tests__`, `${process.cwd()}/__tests__`, {
 		overwrite: true,
 		matching: "!*.ejs",
 	});
@@ -98,6 +148,9 @@ async function install(context) {
 		{ template: "ignite.json.ejs", target: "ignite/ignite.json" },
 		{ template: ".editorconfig", target: ".editorconfig" },
 		{ template: ".eslintrc.js", target: ".eslintrc.js" },
+		{ template: "fastlane/Fastfile", target: "fastlane/Fastfile" },
+		{ template: "fastlane/Appfile", target: "fastlane/Appfile" },
+		{ template: "fastlane/Matchfile", target: "fastlane/Matchfile" },
 		// { template: "Tests/Setup.js.ejs", target: "Tests/Setup.js" },
 		// { template: "storybook/storybook.ejs", target: "storybook/storybook.js" },
 	];
@@ -105,6 +158,7 @@ async function install(context) {
 		name,
 		igniteVersion: ignite.version,
 		reactNativeVersion: rnInstall.version,
+		...answers
 	};
 	await ignite.copyBatch(context, templates, templateProps, {
 		quiet: true,
@@ -160,29 +214,26 @@ async function install(context) {
 
 		await system.spawn(`ignite add ${boilerplate} ${debugFlag}`, { stdio: "inherit" });
 
-    spinner.text = `▸ adding react-native-vector-icons`
-    spinner.start()
-		await system.spawn(`ignite add ${ignite.ignitePluginPath()}/plugins/ignite-vector-icons-axenu ${debugFlag}`, {
-			stdio: "inherit",
-    });
-		spinner.stop();
-
-		if (answers['fast-image']) {
-			spinner.text = `▸ react-native-fast-image`
-			spinner.start()
+    if (answers['packages'].includes('vector-icons')) {
+			await ignite.addModule('react-native-vector-icons', { link: false })
+		}
+		if (answers['packages'].includes('fast-image')) {
 			await ignite.addModule('react-native-fast-image', { link: false })
-			spinner.stop();
+		}
+		if (answers['packages'].includes('async-storage')) {
+			await ignite.addModule('@react-native-community/async-storage', { link: false })
 		}
 		
-		if (answers['includeFirebase']) {
-			spinner.text = `▸ adding @react-native-firebase/app`
-			spinner.start()
+		
+		if (answers['packages'].includes('firebase')) {
+			// spinner.text = `▸ adding @react-native-firebase/app`
+			// spinner.start()
 			await ignite.addModule('@react-native-firebase/app', { link: false })
 
 			// install other firebase modules
 
 			for (key of answers['firebase']) {
-				spinner.text = `▸ adding @react-native-firebase/${key}`
+				// spinner.text = `▸ adding @react-native-firebase/${key}`
 				await ignite.addModule(`@react-native-firebase/${key}`, { link: false })
 			}
 
@@ -193,8 +244,8 @@ async function install(context) {
 			// 		matching: "!*.ejs",
 			// 	});
 			// }
-			spinner.stop();
 		}
+		spinner.stop();
 
 		// if (answers["i18n"] === "react-native-i18n") {
 		// 	await system.spawn(`ignite add i18n@"~>1.0.0" ${debugFlag}`, { stdio: "inherit" });

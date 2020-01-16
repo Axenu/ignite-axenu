@@ -1,0 +1,3 @@
+team_id "<%= props.team_id %>"
+itc_team_id "<%= props.itc_team_id %>"
+app_identifier "<%= props.app_id %>"

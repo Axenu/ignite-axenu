@@ -1,0 +1,122 @@
+fastlane_version '2.53.1'
+
+xcodeproj = "./ios/<%= props.name %>.xcodeproj"
+workspace = "./ios/<%= props.name %>.xcworkspace"
+scheme = "<%= props.name %>"
+
+build_gradle_path = File.join(
+  "..",
+  "android",
+  "app",
+  "build.gradle"
+)
+
+platform :ios do
+   # iOS Lanes
+
+  desc 'run tests'
+  lane :runTests do
+    sh('yarn', 'test')
+  end
+
+  desc 'Fetch certificates and provisioning profiles'
+  lane :certificates do
+    match(type: 'development', readonly: false)
+    match(type: 'appstore', readonly: false)
+  end
+
+  desc 'bump version number'
+  lane :bump do |options|
+    if options[:bump]
+      increment_version_number(xcodeproj: xcodeproj, bump_type: options[:bump])
+    end
+  end
+
+  desc 'Build the iOS application.'
+  private_lane :build do |options|
+    certificates
+    increment_build_number(xcodeproj: xcodeproj)
+
+    if options[:bump]
+      increment_version_number(xcodeproj: xcodeproj, bump_type: options[:bump])
+    end
+
+    gym(scheme: scheme, workspace: workspace)
+  end
+
+  desc 'Ship to Testflight.'
+  lane :beta do |options|
+
+    runTests
+
+    build(options) 
+    pilot(username: "<%= props.email %>", skip_waiting_for_build_processing: false)
+  end
+
+end
+
+platform :android do
+  
+  desc 'run tests'
+  lane :runTests do
+    sh('yarn', 'test')
+  end
+
+  private_lane :get_version_code do
+    re = /versionCode\s+(\d+)/ 
+    s = File.read(build_gradle_path)
+    s[re, 1].to_i
+  end
+
+  desc 'update version code'
+  lane :increment_version_code do
+    
+    re = /versionCode\s+(\d+)/ 
+    s = File.read(build_gradle_path)
+    versionCode = s[re, 1].to_i
+    s[re, 1] = (versionCode + 1).to_s
+
+    f = File.new(build_gradle_path, 'w')
+    f.write(s)
+    f.close
+  end
+
+  lane :upload_to_google do 
+    supply(
+      track: "alpha",
+      json_key: "<%= props.json_key %>",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      skip_upload_changelogs: true,
+      skip_upload_apk: true,
+      package_name: '<%= props.app_id %>',
+      version_code: get_version_code
+    )
+  end
+
+
+  desc "Deploy a new alpha version to the Google Play Store"
+  lane :beta do |options|
+
+    runTests
+
+    increment_version_code
+
+    gradle(
+      task: "bundle",
+      build_type: "Release",
+      project_dir: "android"
+    )
+    upload_to_google
+  end
+
+
+end
+
+desc 'build and upload to store'
+lane :beta do
+  
+  Fastlane::LaneManager.cruise_lane("android", "beta")
+  Fastlane::LaneManager.cruise_lane("ios", "beta")
+end

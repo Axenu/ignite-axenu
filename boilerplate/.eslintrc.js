@@ -1,6 +1,7 @@
 module.exports = {
   "parser": "babel-eslint",
   "extends": ["eslint:recommended", "airbnb"],
+  "plugins": ["jest"],
   "rules": {
     "react/jsx-filename-extension": 0,
     "react/forbid-prop-types": 0,
@@ -27,7 +28,8 @@ module.exports = {
     "react/sort-comp": 0
   },
   "env": {
-    "browser": true
+    "browser": true,
+    "jest/globals": true
   },
   "settings": {
     "import/resolver": "reactnative"
