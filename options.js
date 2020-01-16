@@ -15,18 +15,23 @@ const questions = [
   //   type: 'list',
   //   choices: ['none', 'react-native-vector-icons']
   // },
-  {
-    name: 'i18n',
-    message: 'What internationalization library will you use?',
-    type: 'list',
-    choices: ['none', 'react-native-i18n']
-  },
   // {
-  //   name: 'animatable',
-  //   message: 'What animation library will you use?',
+  //   name: 'i18n',
+  //   message: 'What internationalization library will you use?',
   //   type: 'list',
-  //   choices: ['none', 'react-native-animatable']
-  // }
+  //   choices: ['none', 'react-native-i18n']
+  // },
+  {
+    name: 'firebase',
+    message: 'Do you want to include firebase?',
+    type: 'multiselect',
+    choices: ['none', 'database', 'functions', 'analytics', 'firestore', 'storage', 'auth']
+  },
+  {
+    name: 'fast-image',
+    message: 'Do you want to include fast-image?',
+    type: 'confirm',
+  }
 ]
 
 /**

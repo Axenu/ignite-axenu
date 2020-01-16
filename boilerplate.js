@@ -34,6 +34,43 @@ async function install(context) {
 	const name = parameters.first
 	const spinner = print.spin(`using the ${red("Axenu")} Ignite boilerplate ${red(name)}`).succeed();
 
+	// --max, --min, interactive
+	let answers;
+	if (parameters.options.max) {
+		answers = options.answers.max;
+	} else if (parameters.options.min) {
+		answers = options.answers.min;
+	} else {
+		answers = await prompt.ask([
+			{
+				name: 'fast-image',
+				message: 'Do you want to include fast-image?',
+				type: 'confirm',
+			},
+			{
+				name: 'includeFirebase',
+				message: 'Do you want to include firebase?',
+				type: 'confirm',
+			}
+		]);
+
+		if (answers['includeFirebase']) {
+			// await prompt.ask([
+			// 	{
+			// 		type: 'input',
+			// 		name: 'google-service',
+			// 		message: 'Enter the path for googleService-Info.plist',
+			// 	}])
+			await prompt.ask([{
+				name: 'firebase',
+				message: 'which parts of firebase should be included?',
+				type: 'multiselect',
+				choices: ['database', 'functions', 'analytics', 'firestore', 'storage', 'auth']
+			},])
+		}
+	}
+
+
 	// attempt to install React Native or die trying
 	const rnInstall = await reactNative.install({
 		name,
@@ -50,16 +87,7 @@ async function install(context) {
 	});
   
 	spinner.stop();
-
-	// --max, --min, interactive
-	let answers;
-	if (parameters.options.max) {
-		answers = options.answers.max;
-	} else if (parameters.options.min) {
-		answers = options.answers.min;
-	} else {
-		answers = await prompt.ask(options.questions);
-	}
+	
 
 	// generate some templates
 	spinner.text = "▸ generating files";
@@ -137,7 +165,36 @@ async function install(context) {
 		await system.spawn(`ignite add ${ignite.ignitePluginPath()}/plugins/ignite-vector-icons-axenu ${debugFlag}`, {
 			stdio: "inherit",
     });
-    spinner.stop();
+		spinner.stop();
+
+		if (answers['fast-image']) {
+			spinner.text = `▸ react-native-fast-image`
+			spinner.start()
+			await ignite.addModule('react-native-fast-image', { link: false })
+			spinner.stop();
+		}
+		
+		if (answers['includeFirebase']) {
+			spinner.text = `▸ adding @react-native-firebase/app`
+			spinner.start()
+			await ignite.addModule('@react-native-firebase/app', { link: false })
+
+			// install other firebase modules
+
+			for (key of answers['firebase']) {
+				spinner.text = `▸ adding @react-native-firebase/${key}`
+				await ignite.addModule(`@react-native-firebase/${key}`, { link: false })
+			}
+
+			// copy the googleService-Info.pllist file
+			// if (answers['google-service'] != '') {
+			// 	filesystem.copy(answers['google-service'], `${process.cwd()}/`, {
+			// 		overwrite: true,
+			// 		matching: "!*.ejs",
+			// 	});
+			// }
+			spinner.stop();
+		}
 
 		// if (answers["i18n"] === "react-native-i18n") {
 		// 	await system.spawn(`ignite add i18n@"~>1.0.0" ${debugFlag}`, { stdio: "inherit" });
