@@ -2,9 +2,20 @@
   "name": "ignite-axenu-boilerplate",
   "description": "Axenu boilerplate for react native",
   "license": "MIT",
+  "repository": "Axenu/ignite-axenu",
+  "homepage": "https://github.com/Axenu/ignite-axenu",
   "version": "0.0.1",
   "files": [
+    "boilerplate.js",
+    "boilerplate",
+    "options.js",
+    "README.md"
   ],
+  "author": {
+    "name": "Axenu",
+    "email": "simon@axenu.com",
+    "url": "https://github.com/Axenu/ignite-axenu"
+  },
   "scripts": {
     "lint": "standard",
     "test": "jest",
